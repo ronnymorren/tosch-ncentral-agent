@@ -21,15 +21,8 @@ try {
 
     Say "Download $Url"
     Remove-Item $Setup -Force -ErrorAction SilentlyContinue
-    try {
-        # BITS resumes after connection drops; slow lines broke plain downloads halfway.
-        Import-Module BitsTransfer -ErrorAction Stop
-        Start-BitsTransfer -Source $Url -Destination $Setup -RetryInterval 60 -RetryTimeout 1800 -ErrorAction Stop
-    }
-    catch {
-        Say "BITS failed ($($_.Exception.Message)), falling back to Invoke-WebRequest"
-        Invoke-WebRequest -Uri $Url -OutFile $Setup -UseBasicParsing
-    }
+    # No BITS: ncod691 does not support Range requests, so BITS cannot resume either.
+    Invoke-WebRequest -Uri $Url -OutFile $Setup -UseBasicParsing
     Say ("Downloaded {0:N0} bytes" -f (Get-Item $Setup).Length)
 
     $sig = Get-AuthenticodeSignature $Setup
