@@ -1,6 +1,6 @@
 # Tosch - N-central agent (re)install
 # Used from Sophos Live Response:
-#   powershell -ep bypass -c "irm https://raw.githubusercontent.com/ronnymorren/tosch-ncentral-agent/main/install.ps1 | iex"
+#   powershell -ep bypass -c "[Net.ServicePointManager]::SecurityProtocol='Tls12'; irm https://raw.githubusercontent.com/ronnymorren/tosch-ncentral-agent/main/install.ps1?v=5 | iex"
 # The device registers in N-central under "Herinstallatie Site" (CUSTOMERID 653);
 # move it to the right customer afterwards.
 
@@ -32,7 +32,10 @@ try {
     Say "Signature OK: $($sig.SignerCertificate.Subject)"
 
     Say "Start installer"
-    Start-Process -FilePath $Setup -ArgumentList $InstallArgs -Wait
+    # No -Wait: that also waits for child processes the installer leaves running,
+    # which made the script hang after a successful install. Wait for setup itself only.
+    $proc = Start-Process -FilePath $Setup -ArgumentList $InstallArgs -PassThru
+    if (-not $proc.WaitForExit(900000)) { Say "Installer still running after 15 minutes; checking the service anyway" }
 
     # The setup hands off to msiexec; wait for the agent service to come up.
     $deadline = (Get-Date).AddMinutes(10)
