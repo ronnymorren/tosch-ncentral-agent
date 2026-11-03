@@ -120,8 +120,24 @@ try {
         if($installerExit -notin @(0,3010)){throw ('Installer exit code '+$installerExit)}
         $result.RebootRequired=($installerExit -eq 3010)
         $deadline=(Get-Date).AddMinutes(10)
+        $after=$null;$service=$null
         do {
-            $after=Read-AgentIdentity
+            # Agent files can temporarily disappear while the installer finishes.
+            # Wait within the existing deadline; never run the installer again.
+            if(!(Test-Path -LiteralPath $configFile) -or !(Test-Path -LiteralPath $agentExe)){
+                Start-Sleep -Seconds 10
+                continue
+            }
+            try {$after=Read-AgentIdentity}
+            catch [IO.IOException] {Start-Sleep -Seconds 10;continue}
+            catch [Xml.XmlException] {Start-Sleep -Seconds 10;continue}
+            catch {
+                if($_.Exception.Message -eq 'Existing agent/configuration missing; upgrade-only operation refused.'){
+                    Start-Sleep -Seconds 10
+                    continue
+                }
+                throw
+            }
             $service=Get-Service -Name 'Windows Agent Service' -ErrorAction SilentlyContinue
             if($after.ApplianceId -ne $ExpectedApplianceId){throw 'ApplianceID changed; manual investigation required.'}
             if($after.Version -eq $TargetVersion -and $service.Status -eq 'Running'){break}
@@ -129,9 +145,13 @@ try {
         }while((Get-Date) -lt $deadline)
         $result.VersionAfter=$after.Version;$result.ServiceState=[string]$service.Status
         $result.BootUnchanged=((Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime().ToString('o') -eq $beforeBoot)
-        if($after.Version -ne $TargetVersion -or $service.Status -ne 'Running'){throw 'Target version/service not confirmed.'}
-        $result.Status=if($result.RebootRequired){'PendingReboot'}else{'LocalVerifiedWaitCloud'}
-        $result.Reason='Independent cloud/customer/site/heartbeat/duplicate checks still required.'
+        if(!$after -or $after.Version -ne $TargetVersion -or $service.Status -ne 'Running'){
+            $result.Status=if($result.RebootRequired){'PendingRebootNeedsVerification'}else{'LocalVerificationIncomplete'}
+            $result.Reason='Postcheck deadline reached; target version/service not confirmed. No second installer or reboot started.'
+        }else{
+            $result.Status=if($result.RebootRequired){'PendingReboot'}else{'LocalVerifiedWaitCloud'}
+            $result.Reason='Independent cloud/customer/site/heartbeat/duplicate checks still required.'
+        }
     }
 }catch{
     if($result.Status -ne 'UnknownInstallerOutcome'){$result.Status='Failed'}
@@ -143,6 +163,6 @@ try {
     [Environment]::SetEnvironmentVariable('NCKEY',$null,'Process')
 }
 $result|ConvertTo-Json -Compress
-if($result.Status -eq 'PendingReboot'){exit 3010}
+if($result.Status -in @('PendingReboot','PendingRebootNeedsVerification')){exit 3010}
 if($result.Status -in @('LocalVerifiedWaitCloud','AlreadyCurrent')){exit 0}
 exit 1
