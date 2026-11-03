@@ -3,8 +3,8 @@ rem REVIEW CANDIDATE: deliberately not runnable until reviewed values are filled
 rem NCKEY must already be present in the calling session. Never put a key in this file.
 setlocal
 set "RC=1"
-set "SCRIPT_COMMIT=dc76d39900ccdec90210b94fb04ffefaf98d6135"
-set "SCRIPT_SHA256=638d7b8b753be5ff80502d8d787181b9b498dd0d1e70a92c075f1a74d3fdf4ea"
+set "SCRIPT_COMMIT=5f03fd7218db385308d42e464d90c1f0f8d5e9e4"
+set "SCRIPT_SHA256=39388db163ff0e9c410c62cbf491df673b5fe3bee567344117f6f80d1984d6ac"
 set "INSTALLER_SHA256=3f37f8b4535fa75e9a637fd720c15f116adce8b4c236045ae7635b5b66992fce"
 rem Controller supplies validated hostname, serial and ApplianceID as three arguments.
 set "DEVICE_NAME=%~1"
