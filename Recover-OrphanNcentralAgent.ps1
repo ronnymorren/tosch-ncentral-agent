@@ -14,7 +14,7 @@ $r=[ordered]@{Status='Failed';Computer=$env:COMPUTERNAME;Serial=$null;OldApplian
 function Read-Identity {
  foreach($p in @($root,(Join-Path $root 'config'),(Join-Path $root 'bin'),$config,$exe)) {
   if(!(Test-Path -LiteralPath $p)){throw 'Existing orphan agent missing; this is not a new-install script.'}
-  if((Get-Item -LiteralPath $p).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Agent path is a reparse point.'}
+  if((Get-Item -LiteralPath $p -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Agent path is a reparse point.'}
  }
  $s=[Xml.XmlReaderSettings]::new();$s.DtdProcessing=[Xml.DtdProcessing]::Prohibit;$s.XmlResolver=$null
  $reader=[Xml.XmlReader]::Create($config,$s)
@@ -51,7 +51,7 @@ try {
  $boot=(Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime().ToString('o')
  $work='C:\ProgramData\Tosch\AgentMaintenance'
  foreach($p in @('C:\ProgramData','C:\ProgramData\Tosch',$work)){
-  if(Test-Path -LiteralPath $p){if((Get-Item -LiteralPath $p).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Work path is a reparse point.'}}
+  if(Test-Path -LiteralPath $p){if((Get-Item -LiteralPath $p -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Work path is a reparse point.'}}
   else{New-Item -ItemType Directory -Path $p|Out-Null}
  }
  $acl=[Security.AccessControl.DirectorySecurity]::new();$acl.SetAccessRuleProtection($true,$false)
