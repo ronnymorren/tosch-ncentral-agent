@@ -13,7 +13,7 @@ if not defined EXPECTED_COMPUTER goto notready
 if not defined EXPECTED_SERIAL goto notready
 if not defined EXPECTED_APPLIANCE goto notready
 if not defined NCKEY goto notready
-whoami /user | findstr /c:"S-1-5-18" >nul
+powershell.exe -NoProfile -Command "try { if ([Security.Principal.WindowsIdentity]::GetCurrent().User.Value -eq 'S-1-5-18') { exit 0 }; exit 1 } catch { exit 1 }" >nul 2>&1
 if errorlevel 1 goto notready
 set "ROOT=C:\ProgramData\Tosch"
 if not exist "%ROOT%" mkdir "%ROOT%"
