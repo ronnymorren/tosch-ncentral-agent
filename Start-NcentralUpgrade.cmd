@@ -17,7 +17,7 @@ if "%DEVICE_NAME%"=="" goto notready
 if "%DEVICE_SERIAL%"=="" goto notready
 if "%APPLIANCE_ID%"=="" goto notready
 if not defined NCKEY goto notready
-whoami /user | findstr /c:"S-1-5-18" >nul
+powershell.exe -NoProfile -Command "try { if ([Security.Principal.WindowsIdentity]::GetCurrent().User.Value -eq 'S-1-5-18') { exit 0 }; exit 1 } catch { exit 1 }" >nul 2>&1
 if errorlevel 1 goto finish
 if not exist "C:\ProgramData\Tosch" mkdir "C:\ProgramData\Tosch"
 fsutil reparsepoint query "C:\ProgramData\Tosch" >nul 2>&1
