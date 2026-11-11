@@ -5,7 +5,7 @@ setlocal
 set "RC=1"
 set "SCRIPT_COMMIT=5f03fd7218db385308d42e464d90c1f0f8d5e9e4"
 set "SCRIPT_SHA256=39388db163ff0e9c410c62cbf491df673b5fe3bee567344117f6f80d1984d6ac"
-set "INSTALLER_SHA256=3f37f8b4535fa75e9a637fd720c15f116adce8b4c236045ae7635b5b66992fce"
+set "INSTALLER_SHA256=7ff03c5fd6ab8cafb981a4aa4c6cda37b8a0ae3996f88d09936d387de7719b85"
 rem Controller supplies validated hostname, serial and ApplianceID as three arguments.
 set "DEVICE_NAME=%~1"
 set "DEVICE_SERIAL=%~2"
@@ -38,7 +38,7 @@ if errorlevel 1 goto finish
 findstr /i /x /c:"%SCRIPT_SHA256%" "%RUN%\script-sha256.txt" >nul
 if errorlevel 1 goto finish
 rem Use normal execution policy. If policy blocks the script, stop and review it.
-powershell.exe -NoProfile -File "%RUN%\Upgrade-NcentralAgent.ps1" -ExpectedComputerName "%DEVICE_NAME%" -ExpectedSerial "%DEVICE_SERIAL%" -ExpectedApplianceId "%APPLIANCE_ID%" -ExpectedInstallerSha256 "%INSTALLER_SHA256%"
+powershell.exe -NoProfile -File "%RUN%\Upgrade-NcentralAgent.ps1" -ExpectedComputerName "%DEVICE_NAME%" -ExpectedSerial "%DEVICE_SERIAL%" -ExpectedApplianceId "%APPLIANCE_ID%" -ExpectedInstallerSha256 "%INSTALLER_SHA256%" -TargetVersion "2026.4.1.26" -ExpectedInstallerBytes 139808560
 set "RC=%ERRORLEVEL%"
 goto finish
 :notready
