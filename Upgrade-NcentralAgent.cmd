@@ -6,9 +6,9 @@ set "RC=1"
 set "EXPECTED_COMPUTER=%~1"
 set "EXPECTED_SERIAL=%~2"
 set "EXPECTED_APPLIANCE=%~3"
-set "TARGET_VERSION=2026.4.0.31"
-set "INSTALLER_SHA256=3f37f8b4535fa75e9a637fd720c15f116adce8b4c236045ae7635b5b66992fce"
-set "INSTALLER_BYTES=139556088"
+set "TARGET_VERSION=2026.4.1.26"
+set "INSTALLER_SHA256=7ff03c5fd6ab8cafb981a4aa4c6cda37b8a0ae3996f88d09936d387de7719b85"
+set "INSTALLER_BYTES=139808560"
 if not defined EXPECTED_COMPUTER goto notready
 if not defined EXPECTED_SERIAL goto notready
 if not defined EXPECTED_APPLIANCE goto notready
@@ -37,7 +37,7 @@ powershell.exe -NoProfile -Command "$ErrorActionPreference='Stop';try{if($env:CO
 set "RC=%ERRORLEVEL%"
 if "%RC%"=="10" goto finish
 if not "%RC%"=="0" goto finish
-curl.exe --fail --silent --show-error --location --max-redirs 0 --connect-timeout 30 --max-time 600 --output "%INSTALLER%.partial" "https://ncod691.n-able.com/download/2026.4.0.31/winnt/N-central/WindowsAgentSetup.exe"
+curl.exe --fail --silent --show-error --location --max-redirs 0 --connect-timeout 30 --max-time 600 --output "%INSTALLER%.partial" "https://ncod691.n-able.com/download/2026.4.1.26/winnt/N-central/WindowsAgentSetup.exe"
 if errorlevel 1 goto downloadfailed
 rem Verify exact bytes, SHA-256, valid publisher signature, unchanged identity/version and idle installer immediately before launch.
 powershell.exe -NoProfile -Command "$ErrorActionPreference='Stop';try{$f=Get-Item -LiteralPath ($env:INSTALLER+'.partial');if($f.Attributes -band [IO.FileAttributes]::ReparsePoint -or $f.Length -ne [long]$env:INSTALLER_BYTES){throw 'Length/path'};if((Get-FileHash -LiteralPath $f.FullName -Algorithm SHA256).Hash -ine $env:INSTALLER_SHA256){throw 'Hash'};$sig=Get-AuthenticodeSignature -LiteralPath $f.FullName;if($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -notmatch ('(?i)(?:^|,\s*)O='+[char]34+'?N-ABLE TECHNOLOGIES LTD'+[char]34+'?(?:,|$)')){throw 'Signature'};$b=Get-Content -LiteralPath (Join-Path $env:RUN 'before.json') -Raw|ConvertFrom-Json;if($env:COMPUTERNAME -ine $b.Computer -or (Get-CimInstance Win32_BIOS).SerialNumber.Trim() -ne $b.Serial){throw 'Identity'};$xs=[Xml.XmlReaderSettings]::new();$xs.DtdProcessing=[Xml.DtdProcessing]::Prohibit;$xs.XmlResolver=$null;$xr=[Xml.XmlReader]::Create($env:AGENT_CONFIG,$xs);try{$x=[Xml.XmlDocument]::new();$x.XmlResolver=$null;$x.Load($xr)}finally{$xr.Dispose()};if([string]$x.ApplianceConfig.ApplianceID -ne $b.ApplianceId -or (Get-Item -LiteralPath $env:AGENT_EXE).VersionInfo.FileVersion.Trim() -ne $b.VersionBefore){throw 'Concurrent change'};$m=$null;$held=$false;try{try{$m=[Threading.Mutex]::OpenExisting('Global\_MSIExecute')}catch [Threading.WaitHandleCannotBeOpenedException]{};if($m){$held=$m.WaitOne(0);if(!$held){throw 'MSI busy'}};if(@(Get-Process WindowsAgentSetup,WindowsProbeSetup -ErrorAction SilentlyContinue).Count){throw 'Setup busy'}}finally{if($held){$m.ReleaseMutex()};if($m){$m.Dispose()}};Move-Item -LiteralPath $f.FullName -Destination $env:INSTALLER;[pscustomobject]@{Phase='InstallerVerified'}|ConvertTo-Json -Compress;exit 0}catch{[pscustomobject]@{Status='ValidationRefused';InstallerStarted=$false;Reason='Download integrity, signature, identity or installer-idle check failed. No installer started.'}|ConvertTo-Json -Compress;exit 1}"
